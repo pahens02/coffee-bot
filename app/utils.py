@@ -1,5 +1,5 @@
 import requests
-from app.config import SLACK_BOT_TOKEN, EDGE_FUNCTION_URL
+from app.config import SLACK_BOT_TOKEN, EDGE_FUNCTION_URL, SUPABASE_SERVICE_KEY
 from supabase import create_client
 from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 from random import choice
@@ -35,7 +35,11 @@ def log_brew(user_id, user_name, channel):
         "text": "Coffee is ready!",
         "slackBotToken": f"{SLACK_BOT_TOKEN}"
     }
-    response = requests.post(EDGE_FUNCTION_URL, json=edge_function_payload)
+    headers = {
+        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",  # Include the authorization header
+        "Content-Type": "application/json"
+    }
+    response = requests.post(EDGE_FUNCTION_URL, json=edge_function_payload, headers=headers)
 
     if response.status_code != 200:
         print(f"Edge Function error: {response.text}")

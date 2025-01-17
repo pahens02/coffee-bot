@@ -1,0 +1,22 @@
+name: Trigger Supabase Edge Function
+
+on:
+  schedule:
+    # Run every minute
+    - cron: "*/1 * * * *"
+
+jobs:
+  call-edge-function:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Invoke Supabase Edge Function
+        env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          EDGE_FUNCTION_URL: ${{ secrets.EDGE_FUNCTION_URL }}
+        run: |
+          curl -X POST $EDGE_FUNCTION_URL \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+

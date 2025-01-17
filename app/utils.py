@@ -12,6 +12,8 @@ def log_brew(user_id, user_name, channel):
     """
     Logs the brewing activity in the database and schedules a follow-up message.
     """
+    from datetime import datetime, timedelta
+
     # Log the brewing activity
     supabase.table("brewing_logs").insert({
         "user_id": user_id,
@@ -22,10 +24,12 @@ def log_brew(user_id, user_name, channel):
 
     # Schedule the follow-up message
     follow_up_data = {
-        "user_id": user_id,
-        "user_name": user_name,
-        "channel": channel,
-        "schedule_at": (datetime.utcnow() + timedelta(minutes=1)).isoformat()  # Convert to ISO 8601
+        "execute_at": (datetime.utcnow() + timedelta(minutes=1)).isoformat(),
+        "payload": {
+            "text": "☕ Coffee is ready!",
+            "channel": channel
+        },
+        "channel": channel
     }
     supabase.table("brewing_jobs").insert(follow_up_data).execute()
 

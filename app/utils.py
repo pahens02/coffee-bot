@@ -9,11 +9,15 @@ supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 
 def log_brew(user_id, user_name, channel):
-    # Log the brewing activity in the database
+    """
+    Logs the brewing activity in the database and schedules a follow-up message.
+    """
+    # Log the brewing activity
     supabase.table("brewing_logs").insert({
         "user_id": user_id,
         "user_name": user_name,
-        "channel": channel
+        "channel": channel,
+        "timestamp": datetime.utcnow().isoformat()  # Add a timestamp
     }).execute()
 
     # Schedule the follow-up message
@@ -21,7 +25,7 @@ def log_brew(user_id, user_name, channel):
         "user_id": user_id,
         "user_name": user_name,
         "channel": channel,
-        "schedule_at": datetime.utcnow() + timedelta(minutes=10)
+        "schedule_at": (datetime.utcnow() + timedelta(minutes=10)).isoformat()  # Convert to ISO 8601
     }).execute()
 
 

@@ -2,7 +2,6 @@ from flask import Blueprint, request, jsonify
 import requests
 from app.utils import (
     send_message,
-    delayed_message,
     log_brew,
     get_channel_users,
     pick_random_brewer,

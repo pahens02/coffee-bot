@@ -1,6 +1,4 @@
 import requests
-import threading
-import time
 from app.config import SLACK_BOT_TOKEN
 from supabase import create_client
 from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY

@@ -39,9 +39,6 @@ def brew():
         initial_message = f"*{user_name}* has started brewing!"
         send_message(COFFEE_CHANNEL_ID, initial_message)
 
-        # Schedule follow-up message
-        delayed_message(COFFEE_CHANNEL_ID, "Coffee is ready!", 480)
-
         return {"text": "Brewing timer started! The coffee channel will be notified."}
 
     return jsonify(handle_dm(request.form, handler))

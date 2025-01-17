@@ -5,21 +5,26 @@ from app.config import SLACK_BOT_TOKEN
 from supabase import create_client
 from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 from random import choice
-from datetime import datetime
+from datetime import datetime, timedelta
 
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 
-def log_brew(user_id, user_name, channel_id):
-    """
-    Logs a brewing activity to the Supabase database.
-    """
-    data = {
+def log_brew(user_id, user_name, channel):
+    # Log the brewing activity in the database
+    supabase.table("brewing_logs").insert({
         "user_id": user_id,
         "user_name": user_name,
-        "channel_id": channel_id
-    }
-    supabase.table("brewing_logs").insert(data).execute()
+        "channel": channel
+    }).execute()
+
+    # Schedule the follow-up message
+    supabase.table("brewing_jobs").insert({
+        "user_id": user_id,
+        "user_name": user_name,
+        "channel": channel,
+        "schedule_at": datetime.utcnow() + timedelta(minutes=10)
+    }).execute()
 
 
 def send_message(channel, text):
@@ -39,14 +44,6 @@ def send_message(channel, text):
 
     if not response.ok:
         print(f"Failed to send message: {response.text}")
-
-
-def delayed_message(channel, text, delay):
-    def task():
-        time.sleep(delay)
-        send_message(channel, text)
-    thread = threading.Thread(target=task)
-    thread.start()
 
 
 def get_channel_users(channel_id):

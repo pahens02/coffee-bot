@@ -1,5 +1,5 @@
 import requests
-from app.config import SLACK_BOT_TOKEN
+from app.config import SLACK_BOT_TOKEN, EDGE_FUNCTION_URL
 from supabase import create_client
 from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 from random import choice
@@ -21,12 +21,26 @@ def log_brew(user_id, user_name, channel):
     }).execute()
 
     # Schedule the follow-up message
-    supabase.table("brewing_jobs").insert({
+    follow_up_data = {
         "user_id": user_id,
         "user_name": user_name,
         "channel": channel,
         "schedule_at": (datetime.utcnow() + timedelta(minutes=10)).isoformat()  # Convert to ISO 8601
-    }).execute()
+    }
+    supabase.table("brewing_jobs").insert(follow_up_data).execute()
+
+    # Immediately call the Edge Function
+    edge_function_payload = {
+        "channel": channel,
+        "text": "Coffee is ready!",
+        "slackBotToken": f"{SLACK_BOT_TOKEN}"
+    }
+    response = requests.post(EDGE_FUNCTION_URL, json=edge_function_payload)
+
+    if response.status_code != 200:
+        print(f"Edge Function error: {response.text}")
+    else:
+        print("Edge Function successfully triggered.")
 
 
 def send_message(channel, text):

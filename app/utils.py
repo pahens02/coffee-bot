@@ -25,26 +25,11 @@ def log_brew(user_id, user_name, channel):
         "user_id": user_id,
         "user_name": user_name,
         "channel": channel,
-        "schedule_at": (datetime.utcnow() + timedelta(minutes=10)).isoformat()  # Convert to ISO 8601
+        "schedule_at": (datetime.utcnow() + timedelta(minutes=1)).isoformat()  # Convert to ISO 8601
     }
     supabase.table("brewing_jobs").insert(follow_up_data).execute()
 
-    # Immediately call the Edge Function
-    edge_function_payload = {
-        "channel": channel,
-        "text": "Coffee is ready!",
-        "slackBotToken": f"{SLACK_BOT_TOKEN}"
-    }
-    headers = {
-        "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",  # Include the authorization header
-        "Content-Type": "application/json"
-    }
-    response = requests.post(EDGE_FUNCTION_URL, json=edge_function_payload, headers=headers)
-
-    if response.status_code != 200:
-        print(f"Edge Function error: {response.text}")
-    else:
-        print("Edge Function successfully triggered.")
+    print("Brewing activity logged and follow-up message scheduled.")
 
 
 def send_message(channel, text):

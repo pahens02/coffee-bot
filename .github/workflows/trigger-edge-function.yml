@@ -3,7 +3,7 @@ name: Trigger Supabase Edge Function
 on:
   schedule:
     # Run every minute
-    - cron: "* * * * *"
+    - cron: '*/5 * * * *'
 
 jobs:
   call-edge-function:

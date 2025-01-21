@@ -25,7 +25,7 @@ def log_brew(user_id, user_name, channel):
     # Schedule the follow-up message
     follow_up_data = {
         "brew_id": "some_brew_id",  # Placeholder; replace with actual brew_id if available
-        "execute_at": (datetime.utcnow() + timedelta(minutes=1)).isoformat(),
+        "execute_at": (datetime.utcnow() + timedelta(minutes=10)).isoformat(),
         "payload": {
             "text": "☕ Coffee is ready!",
             "channel": channel

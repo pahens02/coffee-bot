@@ -17,27 +17,32 @@ serve(async () => {
   }
 
   for (const job of jobs) {
+    console.log("Job fetched:", job);
+    console.log("Job payload channel:", job.payload.channel);
+
     const response = await fetch("https://slack.com/api/chat.postMessage", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${job.slackBotToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        channel: job.channel,
-        text: "Coffee is ready!",
-      }),
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${job.slackBotToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            channel: job.payload.channel,
+            text: "Coffee is ready!",
+        }),
     });
 
+
     const result = await response.json();
+    console.log("Slack API response:", result);
 
     if (result.ok) {
-      // Delete the processed job
       await supabase.from("brewing_jobs").delete().eq("id", job.id);
     } else {
       console.error("Error sending Slack message:", result.error);
     }
   }
+
 
   return new Response(JSON.stringify({ success: true }), { status: 200 });
 });

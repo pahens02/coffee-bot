@@ -1,5 +1,5 @@
 import requests
-from app.config import SLACK_BOT_TOKEN, EDGE_FUNCTION_URL, SUPABASE_SERVICE_KEY
+from app.config import SLACK_BOT_TOKEN, SUPABASE_SERVICE_KEY
 from supabase import create_client
 from app.config import SUPABASE_URL, SUPABASE_SERVICE_KEY
 from random import choice
@@ -12,7 +12,6 @@ def log_brew(user_id, user_name, channel):
     """
     Logs the brewing activity in the database and schedules a follow-up message.
     """
-    from datetime import datetime, timedelta
 
     # Log the brewing activity
     supabase.table("brewing_logs").insert({
@@ -130,15 +129,19 @@ def log_last_cup(user_id, user_name, channel_id):
 
 def log_accusation(accuser_id, accuser_name, accused_id, accused_name, channel_id):
     """
-    Log an accusation into the Supabase database.
+    Log an accusation into the Supabase database and return the generated accusation ID.
     """
-    supabase.table("accusations").insert({
+    result = supabase.table("accusations").insert({
         "accuser_id": accuser_id,
         "accuser_name": accuser_name,
         "accused_id": accused_id,
         "accused_name": accused_name,
-        "channel_id": channel_id
+        "channel_id": channel_id,
+        "timestamp": datetime.utcnow().isoformat()  # timestamp for filtering
     }).execute()
+
+    # Return the accusation ID from the result
+    return result.data[0]["id"]
 
 
 def get_leaderboard_data(leaderboard_type):
@@ -185,3 +188,23 @@ def get_leaderboard_data(leaderboard_type):
 
     # Return the data
     return response.data
+
+
+def log_refutation(accused_id, accused_name, channel_id):
+    """
+    Logs a refutation anonymously into the Supabase database and returns the accusation ID.
+    """
+
+    # Insert the refutation record
+    result = supabase.table("accusations").insert({
+        "accused_id": accused_id,
+        "accused_name": accused_name,
+        "channel_id": channel_id,
+        "timestamp": datetime.utcnow().isoformat(),
+        "status": "refuted"  # Optional: Track the refutation status
+    }).execute()
+
+    # Return the generated accusation ID
+    if not result.data:
+        raise ValueError("Failed to log accusation: No data returned from the database.")
+    return result.data[0]["id"]

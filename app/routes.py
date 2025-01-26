@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 import requests
+from datetime import datetime, timedelta
 from app.utils import (
+    supabase,
     send_message,
     log_brew,
     get_channel_users,
@@ -8,7 +10,8 @@ from app.utils import (
     log_selected_brewer,
     log_last_cup,
     log_accusation,
-    get_leaderboard_data
+    get_leaderboard_data,
+    log_refutation
 )
 from app.config import SLACK_BOT_TOKEN, COFFEE_CHANNEL_ID
 
@@ -18,7 +21,7 @@ routes = Blueprint('routes', __name__)
 def handle_dm(data, handler_function):
     """
     Handles commands sent via direct message (DM) and routes them to the appropriate handler function.
-    Posts results to the coffee channel.
+    Posts results to the channel.
     """
     user_id = data.get("user_id")
     user_name = data.get("user_name")
@@ -145,17 +148,17 @@ def accuse():
 
     accused_name = user_info["user"]["name"]
 
-    # Log the accusation with the accuser's name
-    log_accusation(accuser_id, accuser_name, accused_id, accused_name, channel_id)
+    # Log the accusation and get the accusation ID
+    accusation_id = log_accusation(accuser_id, accuser_name, accused_id, accused_name, channel_id)
 
-    # Notify the channel anonymously
-    message = f"@{accused_name} has been accused of taking the last cup!"
+    # Notify the channel with the accusation and ID
+    message = f"@{accused_name} has been accused of taking the last cup! (Accusation ID: {accusation_id})"
     send_message(channel_id, message)
 
     # Respond to the accuser with a private acknowledgment
     return jsonify({
         "response_type": "ephemeral",
-        "text": "Your accusation has been sent to the channel."
+        "text": f"Your accusation has been sent to the channel. Accusation ID: {accusation_id}"
     })
 
 
@@ -186,4 +189,142 @@ def leaderboard():
         return {"text": "Leaderboard has been posted in the coffee channel."}
 
     return jsonify(handle_dm(request.form, handler))
+
+
+@routes.route('/liar', methods=['POST'])
+def liar():
+    """
+    Handles the /liar command to refute the most recent accusation made in the past 24 hours.
+    """
+
+    data = request.form
+
+    # Extract data from the command payload
+    channel_id = data.get("channel_id")
+
+    # Calculate the 24-hour window
+    time_limit = datetime.utcnow() - timedelta(hours=24)
+
+    # Fetch the most recent accusation within the past 24 hours
+    recent_accusation = supabase.table("accusations").select("*").filter(
+        "timestamp", "gte", time_limit.isoformat()
+    ).order("timestamp", desc=True).limit(1).execute()
+
+    if not recent_accusation.data:
+        return jsonify({
+            "response_type": "ephemeral",
+            "text": "No accusations found in the past 24 hours! Nothing to refute."
+        })
+
+    # Get the accusation details
+    accusation = recent_accusation.data[0]
+    accusation_id = accusation["id"]
+    accused_name = accusation["accused_name"]
+
+    # Log the refutation
+    log_refutation(accusation_id, channel_id)
+
+    # Notify the channel
+    message = f"🔔 Accusation #{accusation_id} against @{accused_name} has been refuted! Let the debates begin!"
+    send_message(channel_id, message)
+
+    return jsonify({
+        "response_type": "ephemeral",
+        "text": f"Your refutation has been logged anonymously for accusation #{accusation_id} against @{accused_name}."
+    })
+
+
+@routes.route('/judge', methods=['POST'])
+def judge():
+    """
+    Handles the /judge command to allow users to vote on an accusation.
+    """
+    data = request.form
+
+    # Extract command data
+    user_id = data.get("user_id")
+    user_name = data.get("user_name")
+    input_text = data.get("text").strip()
+
+    # Parse the input
+    try:
+        accusation_id, vote = input_text.split()
+        accusation_id = int(accusation_id)
+    except ValueError:
+        return jsonify({
+            "response_type": "ephemeral",
+            "text": "Invalid format. Use `/judge accusation_id accept|reject`."
+        })
+
+    # Validate the vote
+    if vote not in ["accept", "reject"]:
+        return jsonify({
+            "response_type": "ephemeral",
+            "text": "Invalid vote. Use `accept` or `reject`."
+        })
+
+    # Log the vote
+    supabase.table("votes").insert({
+        "accusation_id": accusation_id,
+        "voter_id": user_id,
+        "voter_name": user_name,
+        "vote": vote
+    }).execute()
+
+    return jsonify({
+        "response_type": "ephemeral",
+        "text": f"Your vote to {vote} accusation #{accusation_id} has been recorded."
+    })
+
+
+@routes.route('/call_vote', methods=['POST'])
+def call_vote():
+    """
+    Tally votes for an accusation and announce the result.
+    """
+    data = request.form
+
+    # Extract data from the command payload
+    channel_id = data.get("channel_id")
+    input_text = data.get("text").strip()
+
+    # Parse the input
+    try:
+        accusation_id = int(input_text)
+    except ValueError:
+        return jsonify({
+            "response_type": "ephemeral",
+            "text": "Invalid format. Use `/call_vote accusation_id`."
+        })
+
+    # Fetch votes for the accusation
+    votes = supabase.table("votes").select("*").filter(
+        "accusation_id", "eq", accusation_id
+    ).execute()
+
+    if not votes.data:
+        return jsonify({
+            "response_type": "ephemeral",
+            "text": f"No votes found for accusation #{accusation_id}."
+        })
+
+    # Tally votes
+    accept_votes = sum(1 for vote in votes.data if vote["vote"] == "accept")
+    reject_votes = sum(1 for vote in votes.data if vote["vote"] == "reject")
+
+    # Determine result
+    if accept_votes > reject_votes:
+        result = f"✅ Accusation #{accusation_id} has been upheld with {accept_votes} accept votes and {reject_votes} reject votes!"
+    elif reject_votes > accept_votes:
+        result = f"❌ Accusation #{accusation_id} has been dismissed with {reject_votes} reject votes and {accept_votes} accept votes!"
+    else:
+        result = f"🤔 Accusation #{accusation_id} resulted in a tie with {accept_votes} accept votes and {reject_votes} reject votes."
+
+    # Post result in the channel
+    send_message(channel_id, result)
+
+    return jsonify({
+        "response_type": "ephemeral",
+        "text": f"The votes for accusation #{accusation_id} have been tallied"
+    })
 

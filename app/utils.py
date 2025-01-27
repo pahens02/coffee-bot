@@ -190,21 +190,29 @@ def get_leaderboard_data(leaderboard_type):
     return response.data
 
 
-def log_refutation(accused_id, accused_name, channel_id):
+def log_refutation(accusation_id, channel_id):
     """
-    Logs a refutation anonymously into the Supabase database and returns the accusation ID.
+    Logs a refutation anonymously into the Supabase database using the accusation ID.
     """
+    # Fetch accusation details from the database
+    accusation = supabase.table("accusations").select("*").eq("id", accusation_id).execute()
+
+    if not accusation.data:
+        raise ValueError(f"Accusation with ID {accusation_id} not found.")
+
+    accused_id = accusation.data[0]["accused_id"]
+    accused_name = accusation.data[0]["accused_name"]
 
     # Insert the refutation record
-    result = supabase.table("accusations").insert({
+    result = supabase.table("refutations").insert({
+        "accusation_id": accusation_id,
         "accused_id": accused_id,
         "accused_name": accused_name,
         "channel_id": channel_id,
-        "timestamp": datetime.utcnow().isoformat(),
-        "status": "refuted"  # Optional: Track the refutation status
+        "timestamp": datetime.utcnow().isoformat()
     }).execute()
 
-    # Return the generated accusation ID
     if not result.data:
-        raise ValueError("Failed to log accusation: No data returned from the database.")
+        raise ValueError("Failed to log refutation: No data returned from the database.")
     return result.data[0]["id"]
+

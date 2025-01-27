@@ -152,6 +152,7 @@ def get_leaderboard_data(leaderboard_type):
         query = """
             SELECT accused_name AS user_name, COUNT(*)::INTEGER AS count
             FROM accusations
+            WHERE refuted = FALSE
             GROUP BY accused_name
             ORDER BY count DESC
             LIMIT 3;

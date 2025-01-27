@@ -285,10 +285,16 @@ def call_vote():
 
     # Extract data from the command payload
     channel_id = data.get("channel_id")
-    input_text = data.get("text").strip()
+    input_text = data.get("text", "").strip()  # Ensure input_text is not None
 
-    # Parse the input
-    accusation_id = input_text.strip()  # No need to cast to int
+    # Validate accusation_id
+    if not input_text:
+        return jsonify({
+            "response_type": "ephemeral",
+            "text": "Invalid format. Use `/call_vote accusation_id`."
+        })
+
+    accusation_id = input_text  # Since it's a UUID, no casting needed
 
     # Fetch votes for the accusation
     votes = supabase.table("votes").select("*").filter(
@@ -308,17 +314,27 @@ def call_vote():
     # Determine result
     if accept_votes > reject_votes:
         result = f"✅ Accusation #{accusation_id} has been upheld with {accept_votes} accept votes and {reject_votes} reject votes!"
+        refuted = False  # Accusation is not refuted
     elif reject_votes > accept_votes:
         result = f"❌ Accusation #{accusation_id} has been dismissed with {reject_votes} reject votes and {accept_votes} accept votes!"
+        refuted = True  # Accusation is refuted
     else:
-        result = f"🤔 Accusation #{accusation_id} resulted in a tie with {accept_votes} accept votes and {reject_votes} reject votes."
+        result = f"🤔 Accusation #{accusation_id} resulted in a tie with {accept_votes} accept votes and {reject_votes} reject votes!"
+        refuted = False  # Tie doesn't mark it as refuted
+
+    # Update the accusation with judged and refuted status
+    supabase.table("accusations").update({
+        "judged": True,
+        "refuted": refuted
+    }).eq("id", accusation_id).execute()
 
     # Post result in the channel
     send_message(channel_id, result)
 
     return jsonify({
         "response_type": "ephemeral",
-        "text": f"The votes for accusation #{accusation_id} have been tallied"
+        "text": f"The votes for accusation #{accusation_id} have been tallied."
     })
+
 
 

@@ -101,13 +101,14 @@ CREATE VIEW last_cup_leaderboard AS
   GROUP BY user_name
   ORDER BY times_last_cup DESC;
 
-CREATE VIEW acussed_leaderboard as
+CREATE VIEW accused_leaderboard AS
 SELECT accused_name, COUNT(*) AS accusations
 FROM accusations
+WHERE refuted = FALSE
 GROUP BY accused_name
 ORDER BY accusations DESC;
 
-CREATE VIEW acusser_leaderboard as
+CREATE VIEW accuser_leaderboard as
 SELECT accuser_name, COUNT(*) AS accusations_made
 FROM accusations
 GROUP BY accuser_name

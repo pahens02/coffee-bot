@@ -248,8 +248,7 @@ def judge():
 
     # Parse the input
     try:
-        accusation_id, vote = input_text.split()
-        accusation_id = int(accusation_id)
+        accusation_id, vote = input_text.split()  # No need to cast to int
     except ValueError:
         return jsonify({
             "response_type": "ephemeral",
@@ -265,7 +264,7 @@ def judge():
 
     # Log the vote
     supabase.table("votes").insert({
-        "accusation_id": accusation_id,
+        "accusation_id": accusation_id,  # Keep as UUID (string)
         "voter_id": user_id,
         "voter_name": user_name,
         "vote": vote
@@ -289,13 +288,7 @@ def call_vote():
     input_text = data.get("text").strip()
 
     # Parse the input
-    try:
-        accusation_id = int(input_text)
-    except ValueError:
-        return jsonify({
-            "response_type": "ephemeral",
-            "text": "Invalid format. Use `/call_vote accusation_id`."
-        })
+    accusation_id = input_text.strip()  # No need to cast to int
 
     # Fetch votes for the accusation
     votes = supabase.table("votes").select("*").filter(
@@ -327,4 +320,5 @@ def call_vote():
         "response_type": "ephemeral",
         "text": f"The votes for accusation #{accusation_id} have been tallied"
     })
+
 

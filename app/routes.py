@@ -165,10 +165,10 @@ def accuse():
 @routes.route('/leaderboard', methods=['POST'])
 def leaderboard():
     def handler(_, __, leaderboard_type):
-        valid_options = ["accused_leaderboard", "accuser_leaderboard", "brew_leaderboard"]
+        valid_options = ["accused_leaderboard", "accuser_leaderboard", "brew_leaderboard, and brew_leaderboard_all_time"]
         if leaderboard_type not in valid_options:
             return {
-                "text": "Invalid leaderboard type. Options are: accused_leaderboard, accuser_leaderboard, brew_leaderboard."}
+                "text": "Invalid leaderboard type. Options are: accused_leaderboard, accuser_leaderboard, brew_leaderboard, and brew_leaderboard_all_time"}
 
         # Query leaderboard data
         leaderboard_data = get_leaderboard_data(leaderboard_type)

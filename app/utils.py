@@ -167,6 +167,12 @@ def get_leaderboard_data(leaderboard_type):
         """
     elif leaderboard_type == "brew_leaderboard":
         query = """
+            SELECT user_name, brew_count AS count
+            FROM public.brew_leaderboard
+            LIMIT 3;
+        """
+    elif leaderboard_type == "brew_leaderboard_all_time":
+        query = """
             SELECT user_name, COUNT(*)::INTEGER AS count
             FROM brewing_logs
             GROUP BY user_name

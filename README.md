@@ -35,7 +35,7 @@ Vist https://api.slack.com/quickstart for a guide on how to build this specific 
 
 In the Documentation folder of this project there is a detailed README from Slack that walks you though how to start a project from scratch and run it locally.
 
-However this repo already has the necessary project structure and files, so the main portion you will need is:
+However, this repo already has the necessary project structure and files, so the main portion you will need for local testing is:
 
 ```zsh
 # Run app locally
@@ -43,7 +43,8 @@ $ slack run
 
 Connected, awaiting events
 ```
-For local testing
+You can use a package like [ngrok](https://ngrok.com/downloads/linux) to get a valid URL while the app is running locally.
+
 ### Supabase
 Visit https://supabase.com/docs, sign up, and create a new project. After creating the project you will need the following variables:
 - SUPABASE_URL
@@ -53,9 +54,11 @@ Then check out the supabase_enabled_extensions file and make sure you have every
 To install, go to Database and then Extensions.
 
 The next step is to run **all** of the queries in the [supabase_setup.sql](Documentation/supabase/supabase_setup.sql) file. I recommend breaking the Tables, Views, Functions, 
-and Cron Jobs queries into separate snippets and make sure to sub in any placeholder values like webhooks
+and Cron Jobs queries into separate snippets and make sure to sub in any placeholder values like webhooks.
 
 ### Vercel
+Make sure you have committed all of your files to a github repo.
+
 Visit https://vercel.com/, sign up, and connect your coffee-bot github repo to your account. 
 
 Before deploying you will have a chance to set environment variables and you will need the following:
@@ -66,6 +69,8 @@ Before deploying you will have a chance to set environment variables and you wil
 - SUPABASE_SERVICE_KEY
 
 After you have those proceed with deployment, now you will have an external URL that you can use for your slack commands!
+
+Vercel will automatically run a redeploy after you make commits to the repo, so that is how you would update the app with new commands or other changes
 
 ### Slack Again
 Now that you have an external URL you can go back to your slack app project and add the following commands:

@@ -167,7 +167,7 @@ def get_leaderboard_data(leaderboard_type):
         """
     elif leaderboard_type == "brew_leaderboard":
         query = """
-            SELECT user_name, brew_count AS count
+            SELECT user_name, brew_count::INTEGER AS count
             FROM public.brew_leaderboard
             LIMIT 3;
         """

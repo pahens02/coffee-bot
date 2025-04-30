@@ -182,10 +182,12 @@ def get_leaderboard_data(leaderboard_type):
         query = "SELECT user_name, times_last_cup AS count FROM public.last_cup_leaderboard LIMIT 3;"
 
     elif leaderboard_type == "brewer_monthly_winners":
-        query = "SELECT month_name, summary FROM public.brewer_monthly_winners ORDER BY month;"
+        response = supabase.table("brewer_monthly_winners").select("month_name, summary").order("month").execute()
+        return response.data if response.data else []
 
     elif leaderboard_type == "restock_monthly_winners":
-        query = "SELECT month_name, summary FROM public.restock_monthly_winners ORDER BY month;"
+        response = supabase.table("restock_monthly_winners").select("month_name, summary").order("month").execute()
+        return response.data if response.data else []
 
     else:
         return []

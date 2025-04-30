@@ -146,31 +146,17 @@ def log_accusation(accuser_id, accuser_name, accused_id, accused_name, channel_i
 
 def get_leaderboard_data(leaderboard_type):
     """
-    Query the Supabase database for leaderboard data based on the specified type.
+    Query Supabase for leaderboard data using predefined views or raw SQL.
     """
     if leaderboard_type == "accused_leaderboard":
-        query = """
-            SELECT accused_name AS user_name, COUNT(*)::INTEGER AS count
-            FROM accusations
-            WHERE refuted = FALSE
-            GROUP BY accused_name
-            ORDER BY count DESC
-            LIMIT 3;
-        """
+        query = "SELECT accused_name AS user_name, accusations AS count FROM public.acussed_leaderboard LIMIT 3;"
+
     elif leaderboard_type == "accuser_leaderboard":
-        query = """
-            SELECT accuser_name AS user_name, COUNT(*)::INTEGER AS count
-            FROM accusations
-            GROUP BY accuser_name
-            ORDER BY count DESC
-            LIMIT 3;
-        """
+        query = "SELECT accuser_name AS user_name, accusations_made AS count FROM public.acusser_leaderboard LIMIT 3;"
+
     elif leaderboard_type == "brew_leaderboard":
-        query = """
-            SELECT user_name, brew_count::INTEGER AS count
-            FROM public.brew_leaderboard
-            LIMIT 3;
-        """
+        query = "SELECT user_name, brew_count::INTEGER AS count FROM public.brew_leaderboard LIMIT 3;"
+
     elif leaderboard_type == "brew_leaderboard_all_time":
         query = """
             SELECT user_name, COUNT(*)::INTEGER AS count
@@ -179,34 +165,40 @@ def get_leaderboard_data(leaderboard_type):
             ORDER BY count DESC
             LIMIT 3;
         """
+
     elif leaderboard_type == "restock_leaderboard":
-        query = """
-            SELECT user_name, count
-            FROM public.restock_leaderboard;
-        """
+        query = "SELECT user_name, count FROM public.restock_leaderboard;"
+
     elif leaderboard_type == "restock_leaderboard_all_time":
-        query = f"""
+        query = """
             SELECT user_name, SUM(points)::INTEGER AS count
             FROM restock_logs
             GROUP BY user_name
             ORDER BY count DESC
             LIMIT 3;
         """
+
+    elif leaderboard_type == "last_cup_leaderboard":
+        query = "SELECT user_name, times_last_cup AS count FROM public.last_cup_leaderboard LIMIT 3;"
+
+    elif leaderboard_type == "brewer_monthly_winners":
+        query = "SELECT month_name, summary FROM public.brewer_monthly_winners ORDER BY month;"
+
+    elif leaderboard_type == "restock_monthly_winners":
+        query = "SELECT month_name, summary FROM public.restock_monthly_winners ORDER BY month;"
+
     else:
         return []
 
-    # Call the Supabase function
+    # Execute the query using Supabase RPC
     response = supabase.rpc("execute_raw_sql", {"sql": query}).execute()
 
-    # Debugging: Log the response
+    # Log and handle errors
     print(f"Supabase RPC Response: {response}")
-
-    # Check for errors in the response
     if not response.data:
         print(f"Supabase RPC Error: {response}")
         return []
 
-    # Return the data
     return response.data
 
 

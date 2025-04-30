@@ -146,6 +146,61 @@ ORDER BY
   count DESC
 limit 3;
 
+create or replace view public.brewer_monthly_winners as
+with monthly_brews as (
+  select
+    user_name,
+    date_trunc('month', timestamp) as month,
+    count(*)::integer as count
+  from brewing_logs
+  group by user_name, date_trunc('month', timestamp)
+),
+ranked as (
+  select *,
+         rank() over (partition by month order by count desc) as rnk
+  from monthly_brews
+),
+winners as (
+  select month, count, user_name
+  from ranked
+  where rnk = 1
+)
+select
+  month,
+  to_char(month, 'Month YYYY') as month_name,
+  to_char(month, 'Month YYYY') || ' - ' || string_agg(user_name, ', ') || ' with ' || count || ' point' || case when count = 1 then '' else 's' end as summary
+from winners
+group by month, count
+order by month;
+
+create or replace view public.restock_monthly_winners as
+with monthly_restocks as (
+  select
+    user_name,
+    date_trunc('month', timestamp) as month,
+    sum(points)::integer as count
+  from restock_logs
+  group by user_name, date_trunc('month', timestamp)
+),
+ranked as (
+  select *,
+         rank() over (partition by month order by count desc) as rnk
+  from monthly_restocks
+),
+winners as (
+  select month, count, user_name
+  from ranked
+  where rnk = 1
+)
+select
+  month,
+  to_char(month, 'Month YYYY') as month_name,
+  to_char(month, 'Month YYYY') || ' - ' || string_agg(user_name, ', ') || ' with ' || count || ' point' || case when count = 1 then '' else 's' end as summary
+from winners
+group by month, count
+order by month;
+
+
 
 -- Functions
 CREATE OR REPLACE FUNCTION public.execute_raw_sql(sql TEXT)

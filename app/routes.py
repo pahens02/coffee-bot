@@ -154,26 +154,44 @@ def accuse():
 @routes.route('/leaderboard', methods=['POST'])
 def leaderboard():
     def handler(_, __, leaderboard_type):
-        valid_options = ["accused_leaderboard", "accuser_leaderboard", "brew_leaderboard", "brew_leaderboard_all_time", "restock_leaderboard", "restock_leaderboard_all_time"]
+        valid_options = [
+            "accused_leaderboard",
+            "accuser_leaderboard",
+            "brew_leaderboard",
+            "brew_leaderboard_all_time",
+            "restock_leaderboard",
+            "restock_leaderboard_all_time",
+            "last_cup_leaderboard",
+            "brewer_monthly_winners",
+            "restock_monthly_winners"
+        ]
+
         if leaderboard_type not in valid_options:
             return {
-                "text": "Invalid leaderboard type. Options are: accused_leaderboard, accuser_leaderboard, brew_leaderboard, brew_leaderboard_all_time, restock_leaderboard, and restock_leaderboard_all_time"}
+                "text": "Invalid leaderboard type. Options are:\n" +
+                        ", ".join(valid_options)
+            }
 
-        # Query leaderboard data
+        # Fetch the data
         leaderboard_data = get_leaderboard_data(leaderboard_type)
-
-        # Debugging: Log leaderboard data
         print(f"Leaderboard Data: {leaderboard_data}")
 
         if not leaderboard_data:
             return {"text": f"No data available for {leaderboard_type}."}
 
-        # Format leaderboard message
-        leaderboard_message = f"📊 *{leaderboard_type.replace('_', ' ').title()} Top 3 Users:*\n"
-        for rank, row in enumerate(leaderboard_data, start=1):
-            leaderboard_message += f"{rank}. *{row['user_name']}* - {row['count']} points\n"
+        # Format differently if it's a monthly winner summary
+        if "monthly_winners" in leaderboard_type:
+            title = "🏆 Top Brewers" if "brewer" in leaderboard_type else "🥫 Top Restockers"
+            leaderboard_message = f"{title}\n"
+            for row in leaderboard_data:
+                leaderboard_message += row["summary"] + "\n"
+        else:
+            title = leaderboard_type.replace('_', ' ').title()
+            leaderboard_message = f"📊 *{title} Top 3 Users:*\n"
+            for rank, row in enumerate(leaderboard_data, start=1):
+                leaderboard_message += f"{rank}. *{row['user_name']}* - {row['count']} points\n"
 
-        # Notify the channel
+        # Send to channel and return confirmation
         send_message(COFFEE_CHANNEL_ID, leaderboard_message)
         return {"text": "Leaderboard has been posted in the coffee channel."}
 

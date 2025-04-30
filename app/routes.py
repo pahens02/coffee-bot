@@ -1,18 +1,7 @@
 from flask import Blueprint, request, jsonify
 import requests
 from datetime import datetime, timedelta
-from app.utils import (
-    supabase,
-    send_message,
-    log_brew,
-    get_channel_users,
-    pick_random_brewer,
-    log_selected_brewer,
-    log_last_cup,
-    log_accusation,
-    get_leaderboard_data,
-    log_refutation
-)
+from app.utils import *
 from app.config import SLACK_BOT_TOKEN, COFFEE_CHANNEL_ID
 
 routes = Blueprint('routes', __name__)
@@ -165,10 +154,10 @@ def accuse():
 @routes.route('/leaderboard', methods=['POST'])
 def leaderboard():
     def handler(_, __, leaderboard_type):
-        valid_options = ["accused_leaderboard", "accuser_leaderboard", "brew_leaderboard", "brew_leaderboard_all_time"]
+        valid_options = ["accused_leaderboard", "accuser_leaderboard", "brew_leaderboard", "brew_leaderboard_all_time", "restock_leaderboard", "restock_leaderboard_all_time"]
         if leaderboard_type not in valid_options:
             return {
-                "text": "Invalid leaderboard type. Options are: accused_leaderboard, accuser_leaderboard, brew_leaderboard, and brew_leaderboard_all_time"}
+                "text": "Invalid leaderboard type. Options are: accused_leaderboard, accuser_leaderboard, brew_leaderboard, brew_leaderboard_all_time, restock_leaderboard, and restock_leaderboard_all_time"}
 
         # Query leaderboard data
         leaderboard_data = get_leaderboard_data(leaderboard_type)
@@ -337,4 +326,25 @@ def call_vote():
     })
 
 
+@routes.route('/restock', methods=['POST'])
+def restock():
+    def handler(user_id, user_name, text):
+        try:
+            item, quantity_str = text.strip().split()
+            quantity = int(quantity_str)
+            points = log_restock(user_id, user_name, item, quantity)
+
+            item_clean = item.lower()
+            item_display = f"{item_clean}s" if quantity != 1 else item_clean
+
+            return {
+                "text": f"✅ Logged: {user_name} restocked {quantity} {item_display}. They earned {points} point{'s' if points != 1 else ''}!"
+            }
+
+        except Exception as e:
+            return {
+                "text": f"❌ Error: {str(e)}\nUsage: `/restock [item] [quantity]` (e.g. `/restock creamer 4`)"
+            }
+
+    return jsonify(handle_dm(request.form, handler))
 

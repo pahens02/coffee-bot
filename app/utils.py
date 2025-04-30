@@ -179,6 +179,19 @@ def get_leaderboard_data(leaderboard_type):
             ORDER BY count DESC
             LIMIT 3;
         """
+    elif leaderboard_type == "restock_leaderboard":
+        query = """
+            SELECT user_name, count
+            FROM public.restock_leaderboard;
+        """
+    elif leaderboard_type == "restock_leaderboard_all_time":
+        query = f"""
+            SELECT user_name, SUM(points)::INTEGER AS count
+            FROM restock_logs
+            GROUP BY user_name
+            ORDER BY count DESC
+            LIMIT 3;
+        """
     else:
         return []
 
@@ -222,4 +235,30 @@ def log_refutation(accusation_id, channel_id):
     if not result.data:
         raise ValueError("Failed to log refutation: No data returned from the database.")
     return result.data[0]["id"]
+
+
+def log_restock(user_id, user_name, item, quantity):
+    item = item.lower()
+    item_points = {
+        "creamer": 2,
+        "coffee": 3,
+        "filters": 3,
+        "syrup": 1
+    }
+
+    if item not in item_points:
+        raise ValueError(f"Unknown item type: {item}")
+
+    points = item_points[item] * quantity
+
+    supabase.table("restock_logs").insert({
+        "user_id": user_id,
+        "user_name": user_name,
+        "item": item,
+        "quantity": quantity,
+        "points": points,
+        "timestamp": datetime.utcnow().isoformat()
+    }).execute()
+
+    return points
 

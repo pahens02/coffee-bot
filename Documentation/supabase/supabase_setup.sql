@@ -87,13 +87,31 @@ CREATE TABLE votes (
     CONSTRAINT unique_vote UNIQUE (accusation_id, voter_id)
 );
 
+CREATE TABLE restock_logs (
+  id uuid not null default extensions.uuid_generate_v4 (),
+  user_id text not null,
+  user_name text not null,
+  item text not null,
+  quantity integer not null,
+  points integer not null,
+  timestamp timestamp without time zone default now(),
+  CONSTRAINT restock_logs_pkey PRIMARY KEY (id)
+);
+
 
 -- Views
-CREATE VIEW brew_leaderboard AS
-  SELECT user_name, COUNT(*) AS brew_count
-  FROM brewing_logs
-  GROUP BY user_name
-  ORDER BY brew_count DESC;
+CREATE VIEW brew_leaderboard as
+SELECT
+  brewing_logs.user_name,
+  count(*) as brew_count
+FROM
+  brewing_logs
+WHERE
+  date_trunc('month', brewing_logs.timestamp) = date_trunc('month', current_date)
+GROUP BY
+  brewing_logs.user_name
+ORDER BY
+  brew_count DESC;
 
 CREATE VIEW last_cup_leaderboard AS
   SELECT user_name, COUNT(*) AS times_last_cup
@@ -113,6 +131,20 @@ SELECT accuser_name, COUNT(*) AS accusations_made
 FROM accusations
 GROUP BY accuser_name
 ORDER BY accusations_made DESC;
+
+CREATE VIEW restock_leaderboard as
+SELECT
+  user_name,
+  sum(points)::integer as count
+FROM
+  restock_logs
+WHERE
+  date_trunc('month', timestamp) = date_trunc('month', current_date)
+GROUP BY
+  user_name
+ORDER BY
+  count DESC
+limit 3;
 
 
 -- Functions

@@ -94,3 +94,5 @@ Now that you have an external URL you can go back to your slack app project and 
   - Record your vote on the accusation
 - /call_vote
   - Sum up the votes for the most recent accusation
+- /restock
+  - Logs a restock of coffee supplies

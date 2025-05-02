@@ -3,6 +3,7 @@ import requests
 from datetime import datetime, timedelta
 from app.utils import *
 from app.config import SLACK_BOT_TOKEN, COFFEE_CHANNEL_ID
+import threading
 
 routes = Blueprint('routes', __name__)
 
@@ -347,22 +348,29 @@ def call_vote():
 @routes.route('/restock', methods=['POST'])
 def restock():
     def handler(user_id, user_name, text):
+        response_url = request.form.get("response_url")
+
         try:
             item, quantity_str = text.strip().split()
             quantity = int(quantity_str)
-            points = log_restock(user_id, user_name, item, quantity)
 
-            item_clean = item.lower()
-            item_display = f"{item_clean}s" if quantity != 1 else item_clean
+            # Kick off background thread
+            threading.Thread(
+                target=async_log_restock,
+                args=(user_id, user_name, item, quantity, response_url)
+            ).start()
 
             return {
-                "text": f"✅ Logged: {user_name} restocked {quantity} {item_display}. They earned {points} point{'s' if points != 1 else ''}!"
+                "response_type": "ephemeral",
+                "text": f"⏳ Logging your restock of {item}..."
             }
 
         except Exception as e:
             return {
-                "text": f"❌ Error: {str(e)}\nUsage: `/restock [item] [quantity]` (e.g. `/restock creamer 4`)"
+                "response_type": "ephemeral",
+                "text": f"❌ Error: {str(e)}\nUsage: `/restock item quantity` (e.g. `/restock creamer 4`)"
             }
 
     return jsonify(handle_dm(request.form, handler))
+
 

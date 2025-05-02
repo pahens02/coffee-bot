@@ -348,27 +348,24 @@ def call_vote():
 @routes.route('/restock', methods=['POST'])
 def restock():
     def handler(user_id, user_name, text):
-        response_url = request.form.get("response_url")
-
         try:
             item, quantity_str = text.strip().split()
             quantity = int(quantity_str)
+            points = log_restock(user_id, user_name, item, quantity)
 
-            # Kick off background thread
-            threading.Thread(
-                target=async_log_restock,
-                args=(user_id, user_name, item, quantity, response_url)
-            ).start()
+            item_clean = item.lower()
+            item_display = f"{item_clean}s" if quantity != 1 else item_clean
+            point_word = "point" if points == 1 else "points"
 
-            return {
-                "response_type": "ephemeral",
-                "text": f"⏳ Logging your restock of {item}..."
-            }
+            message = f"✅ Logged: {user_name} restocked {quantity} {item_display}. You earned {points} {point_word}!"
+
+            # Return quickly to Slack
+            return {"response_type": "ephemeral", "text": message}
 
         except Exception as e:
             return {
                 "response_type": "ephemeral",
-                "text": f"❌ Error: {str(e)}\nUsage: `/restock item quantity` (e.g. `/restock creamer 4`)"
+                "text": f"❌ Error: {str(e)}\nUsage: `/restock [item] [quantity]` (e.g. `/restock creamer 4`)"
             }
 
     return jsonify(handle_dm(request.form, handler))

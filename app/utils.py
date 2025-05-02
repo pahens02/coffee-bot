@@ -231,27 +231,6 @@ def log_refutation(accusation_id, channel_id):
     return result.data[0]["id"]
 
 
-def async_log_restock(user_id, user_name, item, quantity, response_url):
-    try:
-        points = log_restock(user_id, user_name, item, quantity)
-        item_display = f"{item}s" if quantity != 1 else item
-        point_word = "point" if points == 1 else "points"
-
-        message = {
-            "response_type": "in_channel",
-            "text": f"✅ {user_name} restocked {quantity} {item_display}. Earned {points} {point_word}!"
-        }
-
-    except Exception as e:
-        message = {
-            "response_type": "ephemeral",
-            "text": f"❌ Restock failed: {str(e)}"
-        }
-
-    # Send async response back to Slack
-    requests.post(response_url, json=message)
-
-
 def log_restock(user_id, user_name, item, quantity):
     item = item.lower()
     item_points = {

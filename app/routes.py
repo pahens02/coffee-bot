@@ -357,10 +357,10 @@ def restock():
             item_display = f"{item_clean}s" if quantity != 1 else item_clean
             point_word = "point" if points == 1 else "points"
 
-            message = f"✅ Logged: {user_name} restocked {quantity} {item_display}. You earned {points} {point_word}!"
+            message = f"✅ Logged: {user_name} restocked {quantity} {item_display}. They earned {points} {point_word}!"
 
             # Return quickly to Slack
-            return {"response_type": "ephemeral", "text": message}
+            return {"response_type": "in_channel", "text": message}
 
         except Exception as e:
             return {

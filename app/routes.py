@@ -357,17 +357,15 @@ def restock():
             item_display = f"{item_clean}s" if quantity != 1 else item_clean
             point_word = "point" if points == 1 else "points"
 
-            message = f"✅ Logged: {user_name} restocked {quantity} {item_display}. They earned {points} {point_word}!"
+            public_message = f"✅ *{user_name}* restocked {quantity} {item_display}. They earned {points} {point_word}!"
+            send_message(COFFEE_CHANNEL_ID, public_message)
 
-            # Return quickly to Slack
-            return {"response_type": "in_channel", "text": message}
+            return {"text": "☑️ Restock recorded and announced!"}  # ephemeral by default
 
         except Exception as e:
             return {
                 "response_type": "ephemeral",
-                "text": f"❌ Error: {str(e)}\nUsage: `/restock [item] [quantity]` (e.g. `/restock creamer 4`)"
+                "text": f"❌ Error: {str(e)}\nUsage: `/restock item quantity` (e.g. `/restock creamer 4`)"
             }
 
     return jsonify(handle_dm(request.form, handler))
-
-
